@@ -1,21 +1,18 @@
 {
   "name": "fis3-deploy-ftp",
-  "description": "",
+  "description": "A deploy plugin for fis3 to deploy ftp.",
   "version": "0.0.1",
-  "author": {
-    "name": "mudoo",
-    "email": "mudoo@qq.com"
-  },
+  "author": "mudoo <mudoo@qq.com>",
   "homepage": "https://github.com/mudoo/",
   "keywords": [
-    "fis",
+    "fis3",
     "deploy",
     "ftp"
   ],
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mudoo/fis3-deploy-ftp.git"
+    "url": "git+https://github.com/mudoo/fis3-deploy-ftp.git"
   },
   "engines": {
     "node": ">= 0.8.0"
@@ -23,9 +20,10 @@
   "dependencies": {
     "ftp": "0.3.6"
   },
-  "readme": "# fis3-deploy-ftp\n\nA deploy plugin for fis3 to deploy ftp.",
-  "readmeFilename": "README.md",
   "bugs": {
     "url": "https://github.com/mudoo/fis3-deploy-ftp.git"
+  },
+  "scripts": {
+    "test": "test.js"
   }
 }
