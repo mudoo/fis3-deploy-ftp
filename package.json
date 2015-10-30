@@ -1,7 +1,7 @@
 {
   "name": "fis3-deploy-ftp",
   "description": "A deploy plugin for fis3 to deploy ftp.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "author": "mudoo <mudoo@qq.com>",
   "homepage": "https://github.com/mudoo/",
   "keywords": [
