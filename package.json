@@ -1,12 +1,12 @@
 {
-  "name": "fis-deploy-ftp",
+  "name": "fis3-deploy-ftp",
   "description": "",
-  "version": "0.0.2",
+  "version": "0.0.1",
   "author": {
-    "name": "qdsang",
-    "email": "qdsang@gmail.com"
+    "name": "mudoo",
+    "email": "mudoo@qq.com"
   },
-  "homepage": "http://qdsang.com/",
+  "homepage": "https://github.com/mudoo/",
   "keywords": [
     "fis",
     "deploy",
@@ -15,7 +15,7 @@
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/qdsang/fis-deploy-ftp.git"
+    "url": "https://github.com/mudoo/fis3-deploy-ftp.git"
   },
   "engines": {
     "node": ">= 0.8.0"
@@ -23,9 +23,9 @@
   "dependencies": {
     "ftp": "0.3.6"
   },
-  "readme": "# fis-deploy-ftp\n\nA deploy plugin for fis to deploy ftp.",
+  "readme": "# fis3-deploy-ftp\n\nA deploy plugin for fis3 to deploy ftp.",
   "readmeFilename": "README.md",
   "bugs": {
-    "url": "https://github.com/qdsang/fis-deploy-ftp.git"
+    "url": "https://github.com/mudoo/fis3-deploy-ftp.git"
   }
 }

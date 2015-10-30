@@ -9,14 +9,13 @@ var path = require('path');
 var remoteDirCache = {};
 var resolveing = {};
 
-module.exports = function(dest, file, content, settings, callback) {
+module.exports = function(options, modified, total, callback) {
 
-    settings.remoteDir = settings.remoteDir || dest.to || '/';
-    // settings.console = true;
-    var ftpQueue = createFtpQueue(settings);
+    options.remoteDir = options.remoteDir || '/';
+    //options.console = true;
+    var ftpQueue = createFtpQueue(options);
+	var listCount = 0;
 
-    dest = path.join(dest.to || '', dest.release);
-    var dirname = path.dirname(dest);
     var resolveDir = function(dirname, cb) {
         if (remoteDirCache[dirname]) {
             cb(false, remoteDirCache[dirname]);
@@ -58,29 +57,48 @@ module.exports = function(dest, file, content, settings, callback) {
             listRemote();
         }
     };
+/*
+	process.stdout.write(
+		'\n '+
+        'ftp upload '.yellow.bold +
+        ' > '.grey +
+        ' start '.green.bold +
+        '\n'
+    );*/
 
-    resolveDir(dirname, function() {
-        ftpQueue.addFile(file.subpath, dest, new Buffer(content), function(err, val) {
+    modified.forEach(function(file) {
+	    //var dest = path.join(options.remoteDir || '', file.getHashRelease());
+	    var dest = file.getHashRelease();
+	    var dirname = path.dirname(dest);
+	    listCount++;
 
-            if (err) {
-                throw new Error(err);
-            }
+	    resolveDir(dirname, function() {
+	    	//console.log(dest +' || '+ dirname +' || '+ file.subpath);
+	        ftpQueue.addFile(file.subpath, dest, new Buffer(file.getContent()), function(err, val) {
 
-            var time = '[' + fis.log.now(true) + ']';
+	            if (err) {
+	                throw new Error(err);
+	            }
 
-            process.stdout.write(
-                ' - '.green.bold +
-                time.grey + ' ' +
-                file.subpath +
-                ' >> '.yellow.bold +
-                dest +
-                '\n'
-            );
+	            var time = '[' + fis.log.now(true) + ']';
 
-            ftpQueue.end();
-            callback && callback();
-        });
-    });
+	            process.stdout.write(
+	                '\n - '.green.bold +
+	                time.grey + ' ' +
+	                file.subpath +
+	                ' >> '.yellow.bold + '\n' +
+	                '              '+ dest +
+	                '\n'
+	            );
+
+	            listCount--;
+	            if(!listCount) {
+	            	ftpQueue.end();
+	            	callback && callback();
+	            }
+	        });
+	    });
+	});
 };
 
 module.exports.defaultOptions = {
