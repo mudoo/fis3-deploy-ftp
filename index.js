@@ -59,24 +59,9 @@ module.exports = function(options, modified, total, callback) {
             listRemote();
         }
     };
-/*
-	process.stdout.write(
-		'\n '+
-        'ftp upload '.yellow.bold +
-        ' > '.grey +
-        ' start '.green.bold +
-        '\n'
-    );*/
 
 	var n = 0;
     files.forEach(function(file) {
-    	// if(n>0) return;
-    	// n++;
-    	// console.log(file.hash)
-    	// for(var t in file) {
-    	// 	console.log(t);
-    	// }
-    	// return;
 	    var dest = file.getHashRelease();
 	    var dirname = path.dirname(dest);
 
