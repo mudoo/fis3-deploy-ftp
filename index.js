@@ -13,8 +13,10 @@ module.exports = function(options, modified, total, callback) {
 
     options.remoteDir = options.remoteDir || '/';
     //options.console = true;
-    var ftpQueue = createFtpQueue(options);
-	var listCount = 0;
+    var ftpQueue = createFtpQueue(options),
+    	files = modified.length==0 ? total : modified,
+		listCount = files.length,
+		uploadTotal = 0;
 
     var resolveDir = function(dirname, cb) {
         if (remoteDirCache[dirname]) {
@@ -66,14 +68,19 @@ module.exports = function(options, modified, total, callback) {
         '\n'
     );*/
 
-    modified.forEach(function(file) {
-	    //var dest = path.join(options.remoteDir || '', file.getHashRelease());
+	var n = 0;
+    files.forEach(function(file) {
+    	// if(n>0) return;
+    	// n++;
+    	// console.log(file.hash)
+    	// for(var t in file) {
+    	// 	console.log(t);
+    	// }
+    	// return;
 	    var dest = file.getHashRelease();
 	    var dirname = path.dirname(dest);
-	    listCount++;
 
 	    resolveDir(dirname, function() {
-	    	//console.log(dest +' || '+ dirname +' || '+ file.subpath);
 	        ftpQueue.addFile(file.subpath, dest, new Buffer(file.getContent()), function(err, val) {
 
 	            if (err) {
@@ -82,17 +89,16 @@ module.exports = function(options, modified, total, callback) {
 
 	            var time = '[' + fis.log.now(true) + ']';
 
+	            uploadTotal++;
 	            process.stdout.write(
 	                '\n - '.green.bold +
 	                time.grey + ' ' +
-	                file.subpath +
-	                ' >> '.yellow.bold + '\n' +
-	                '              '+ dest +
-	                '\n'
+	                uploadTotal +
+	                ' >> '.yellow.bold +
+	                dest
 	            );
 
-	            listCount--;
-	            if(!listCount) {
+	            if(uploadTotal==listCount) {
 	            	ftpQueue.end();
 	            	callback && callback();
 	            }
