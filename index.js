@@ -8,108 +8,175 @@ var path = require('path');
 
 var remoteDirCache = {};
 var resolveing = {};
+var ftpQueue = null;
+
+// fis.log.level = fis.log.L_DEBUG;
 
 module.exports = function(options, modified, total, callback) {
 
     options.remoteDir = options.remoteDir || '/';
-    //options.console = true;
-    var ftpQueue = createFtpQueue(options),
-    	files = modified.length==0 ? total : modified,
-		listCount = files.length,
-		uploadTotal = 0;
+    var ftpCache = fileCache(options),
 
-    var resolveDir = function(dirname, cb) {
-        if (remoteDirCache[dirname]) {
-            cb(false, remoteDirCache[dirname]);
-            return;
-        }
+        files = modified.length==0 ? total : modified,
+        fileCount = files.length,
 
-        var listRemote = function() {
-            var queues = resolveing[dirname] || (resolveing[dirname] = []);
-            if (queues.length) {
-                queues.push(cb);
-            } else {
-                queues.push(cb);
+        uploadFiles = options.cache ? ftpCache.filter(files) : files,
+        uploadTotal = uploadFiles.length,
+        uploadCount = 0;
 
-                ftpQueue.listFiles(dirname, function(err, list){
-                    if (err) {
-                        throw new Error(err);
-                    }
+    var cb = function() {
+        if(uploadTotal==uploadCount) {
+            process.stdout.write(
+                '\n FTP:'.green.bold +
+                ' '+ uploadTotal.toString().green.bold +' file upload,'+
+                ' '+ (fileCount-uploadTotal).toString().yellow.bold +' file skip.'
+            );
 
-                    var fn = function() {
-                        remoteDirCache[dirname] = true;
-                        delete resolveing[dirname];
-                        queues.forEach(function(cb) {
-                            cb(list);
-                        });
-                    };
-
-                    if (!list || list.length == 0) {
-                        ftpQueue.addDir(dirname, fn);
-                    } else {
-                        fn();
-                    }
-                });
-            }
-        }
-
-        if (~dirname.indexOf(path.sep) && path.dirname(dirname) !== dirname) {
-            resolveDir(path.dirname(dirname), listRemote);
-        } else {
-            listRemote();
+            ftpQueue && ftpQueue.end();
+            callback && callback();
         }
     };
 
-	var n = 0;
-    files.forEach(function(file) {
-	    var dest = file.getHashRelease();
-	    var dirname = path.dirname(dest);
+    if(uploadTotal==0) {
+        cb();
+        return;
+    }
 
-	    resolveDir(dirname, function() {
-	        ftpQueue.addFile(file.subpath, dest, new Buffer(file.getContent()), function(err, val) {
+    ftpQueue = createFtpQueue(options);
+    // 上传
+    uploadFiles.forEach(function(file) {
+        var dest = file.getHashRelease();
+        var dirname = path.dirname(dest);
 
-	            if (err) {
-	                throw new Error(err);
-	            }
+        resolveDir(dirname, function() {
+            ftpQueue.addFile(file.subpath, dest, new Buffer(file.getContent()), function(err, val) {
 
-	            var time = '[' + fis.log.now(true) + ']';
+                if (err) {
+                    throw new Error(err);
+                }
 
-	            uploadTotal++;
-	            process.stdout.write(
-	                '\n - '.green.bold +
-	                time.grey + ' ' +
-	                uploadTotal +
-	                ' >> '.yellow.bold +
-	                dest
-	            );
+                var time = '[' + fis.log.now(true) + ']';
 
-	            if(uploadTotal==listCount) {
-	            	ftpQueue.end();
-	            	callback && callback();
-	            }
-	        });
-	    });
-	});
+                uploadCount++;
+                process.stdout.write(
+                    '\n - '.green.bold +
+                    time.grey + ' ' +
+                    uploadCount +
+                    ' >> '.yellow.bold +
+                    dest
+                );
+
+                cb();
+            });
+        });
+    });
 };
 
-module.exports.defaultOptions = {
-    publish: {
-        remoteDir : '/',
-        // filter : null,
-        console : false,
-        connect : {
-            host : '127.0.0.1',
-            port : '21',
-            secure : false,
-            user : 'name',
-            password : '****',
-            secureOptions : undefined,
-            connTimeout : 5000,
-            pasvTimeout : 10000,
-            keepalive : 10000
-        }
+module.exports.options = {
+    remoteDir : '/',
+    cache : true,
+    console : false,
+    connect : {
+        host : '127.0.0.1',
+        port : '21',
+        secure : false,
+        user : 'name',
+        password : '****',
+        secureOptions : undefined,
+        connTimeout : 5000,
+        pasvTimeout : 10000,
+        keepalive : 10000
     }
 };
+
+// 缓存文件
+function fileCache(opts) {
+    var tmpPath = fis.project.getTempPath() + path.sep + 'fis3_deploy_ftp' + path.sep + parsePath(opts.connect.host+':'+opts.connect.port),
+        jsonPath = tmpPath + path.sep + parsePath(opts.remoteDir) +'.json';
+
+    // fis.log.debug('tmpPath: %s', jsonPath);
+
+    var cache = null;
+    if(fis.util.isFile(jsonPath)) {
+        cache = fis.util.readJSON(jsonPath);
+    }else{
+        cache = {};
+    }
+
+    function filter(files) {
+        var result = [];
+        files.forEach(function(file) {
+            var id = file.getId(),
+                hash = file.getHash();
+
+            // fis.log.debug('%s : %s', id, hash);
+            if(!cache[id] || cache[id]!=hash) {
+                cache[id]=hash;
+                result.push(file);
+            }
+        });
+
+        if(result.length>0) save();
+
+        return result;
+    }
+
+    function parsePath(path) {
+        if(!path) return '';
+        return path.replace(/^\/+/, '').replace(/\/\/(.*):(.*)@/,'').replace(/[:\/\\\.-]+/g,'_');
+    }
+
+    function save() {
+        fis.util.write(jsonPath, JSON.stringify(cache));
+    }
+
+    return {
+        filter : filter
+    }
+}
+
+// 遍历文件
+function resolveDir(dirname, cb) {
+    if (remoteDirCache[dirname]) {
+        cb(false, remoteDirCache[dirname]);
+        return;
+    }
+
+    var listRemote = function() {
+        var queues = resolveing[dirname] || (resolveing[dirname] = []);
+        if (queues.length) {
+            queues.push(cb);
+        } else {
+            queues.push(cb);
+
+            ftpQueue.listFiles(dirname, function(err, list){
+                if (err) {
+                    throw new Error(err);
+                }
+
+                var fn = function() {
+                    remoteDirCache[dirname] = true;
+                    delete resolveing[dirname];
+                    queues.forEach(function(cb) {
+                        cb(list);
+                    });
+                };
+
+                if (!list || list.length == 0) {
+                    ftpQueue.addDir(dirname, fn);
+                } else {
+                    fn();
+                }
+            });
+        }
+    }
+
+    if (~dirname.indexOf(path.sep) && path.dirname(dirname) !== dirname) {
+        resolveDir(path.dirname(dirname), listRemote);
+    } else {
+        listRemote();
+    }
+}
 
 // 参考：
 // https://github.com/hitsthings/node-live-ftp-upload/blob/master/index.js
