@@ -96,11 +96,13 @@ function fileCache(opts) {
 
     // fis.log.debug('tmpPath: %s', jsonPath);
 
-    var cache = null;
+    var cache = {};
     if(fis.util.isFile(jsonPath)) {
-        cache = fis.util.readJSON(jsonPath);
-    }else{
-        cache = {};
+    	if(opts.cache) {
+        	cache = fis.util.readJSON(jsonPath);
+    	}else{
+        	fis.util.del(jsonPath);
+    	}
     }
 
     function filter(files) {
