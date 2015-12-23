@@ -24,10 +24,11 @@ module.exports = function(options, modified, total, callback) {
         uploadTotal = uploadFiles.length,
         uploadCount = 0;
 
+    console.log('\n');
     var cb = function() {
         if(uploadTotal==uploadCount) {
-            process.stdout.write(
-                '\n FTP:'.green.bold +
+            console.log(
+                ' FTP:'.green.bold +
                 ' '+ uploadTotal.toString().green.bold +' file upload,'+
                 ' '+ (fileCount-uploadTotal).toString().yellow.bold +' file skip.'
             );
@@ -58,8 +59,8 @@ module.exports = function(options, modified, total, callback) {
                 var time = '[' + fis.log.now(true) + ']';
 
                 uploadCount++;
-                process.stdout.write(
-                    '\n - '.green.bold +
+                console.log(
+                    ' - '.green.bold +
                     time.grey + ' ' +
                     uploadCount +
                     ' >> '.yellow.bold +
@@ -98,11 +99,11 @@ function fileCache(opts) {
 
     var cache = {};
     if(fis.util.isFile(jsonPath)) {
-    	if(opts.cache) {
-        	cache = fis.util.readJSON(jsonPath);
-    	}else{
-        	fis.util.del(jsonPath);
-    	}
+        if(opts.cache) {
+            cache = fis.util.readJSON(jsonPath);
+        }else{
+            fis.util.del(jsonPath);
+        }
     }
 
     function filter(files) {
@@ -152,9 +153,9 @@ function resolveDir(dirname, cb) {
             queues.push(cb);
 
             ftpQueue.listFiles(dirname, function(err, list){
-                if (err) {
-                    throw new Error(err);
-                }
+                /*if (err) {
+                    throw new Error(dirname +' > '+ err);
+                }*/
 
                 var fn = function() {
                     remoteDirCache[dirname] = true;
@@ -253,7 +254,7 @@ function createFtpQueue(opts) {
 
     function doRmdir(filename) {
         if (!client) {
-            initClient(doMkdir.bind(null, filename));
+            initClient(doRmdir.bind(null, filename));
             return;
         }
         var remoteName = getRemoteName(filename);
