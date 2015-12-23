@@ -1,7 +1,7 @@
 {
   "name": "fis3-deploy-ftp",
   "description": "fis3 ftp发布工具，支持跳过未修改文件",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "author": "mudoo <mudoo@qq.com>",
   "homepage": "https://github.com/mudoo/",
   "keywords": [
