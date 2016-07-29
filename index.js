@@ -33,6 +33,7 @@ module.exports = function(options, modified, total, callback) {
                 ' '+ (fileCount-uploadTotal).toString().yellow.bold +' file skip.'
             );
 
+            ftpCache.save();
             ftpQueue && ftpQueue.end();
             callback && callback();
         }
@@ -97,7 +98,8 @@ function fileCache(opts) {
 
     // fis.log.debug('tmpPath: %s', jsonPath);
 
-    var cache = {};
+    var cache = {},
+    	newFiles = [];
     if(fis.util.isFile(jsonPath)) {
         if(opts.cache) {
             cache = fis.util.readJSON(jsonPath);
@@ -118,8 +120,8 @@ function fileCache(opts) {
                 result.push(file);
             }
         });
-
-        if(result.length>0) save();
+        newFiles = result;
+        // if(result.length>0) save();
 
         return result;
     }
@@ -130,11 +132,13 @@ function fileCache(opts) {
     }
 
     function save() {
+    	if(newFiles.length==0) return;
         fis.util.write(jsonPath, JSON.stringify(cache));
     }
 
     return {
-        filter : filter
+        filter : filter,
+        save : save
     }
 }
 
